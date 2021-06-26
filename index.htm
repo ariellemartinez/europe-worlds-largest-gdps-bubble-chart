@@ -3,7 +3,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Highcharts Example</title>
+<title>The World’s Largest GDPs | World101</title>
 <style type="text/css">
 #container {
     height: 100%;
@@ -19,106 +19,109 @@ html, body {
 <script src="https://code.highcharts.com/highcharts.js"></script> 
 <script src="https://code.highcharts.com/highcharts-more.js"></script> 
 <script src="https://code.highcharts.com/modules/exporting.js"></script> 
-<script src="https://world101.cfr.org/themes/custom/world101_bootstrap/components/asset-map-chart/chart/vendors/highchart-cfr-theme.js"></script>
+<script src="https://world101.cfr.org/themes/custom/world101_bootstrap/components/asset-map-chart/chart/vendors/highchart-cfr-theme.js"></script> 
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <div id="container"></div>
 <script type="text/javascript">
-Highcharts.chart('container', {
-    chart: {
-        type: 'packedbubble'
-    },
-    title: {
-        text: "The World\'s Largest GDPs",
-		style: {
-      	fontFamily: '"Larsseit", sans-serif',
-      	color: '#04284a',
-      	fontSize: '30px',
-      	opacity: 1
-    	}
-    },
-	credits: {
-    	href: 'https://www.sipri.org/databases/milex',
-    	text: 'Source: World Bank.',
-    	style: {
-      		display: 'block'
-    	}
-    },
-    tooltip: {
-        useHTML: true,
-        pointFormat: '${point.value} trillion'
-    },
-	legend: {
-		enabled: false
-	},
-    plotOptions: {
-        packedbubble: {
-            maxSize: '120%',
-            dataLabels: {
-                enabled: true,
-                format: '{point.name}'
+	
+$(function () {
+  Highcharts.setOptions({
+    lang: {
+      thousandsSep: ","
+    }
+  });
+  var all_countries = [];
+  var eu_countries = [];
+  $.ajax({
+    url: "https://api.worldbank.org/v2/country?region=WLD&per_page=300&format=json",
+    complete: function (json) {
+      regionJson = JSON.parse(json.responseText);
+      $.each(regionJson[1], function (i, data) {
+        all_countries.push(data.id);
+      });
+      $.ajax({
+        url: "https://api.worldbank.org/v2/country?region=EUU&per_page=300&format=json",
+        complete: function (json) {
+          euJson = JSON.parse(json.responseText);
+          $.each(euJson[1], function (i, data) {
+            eu_countries.push(data.id);
+          });
+          for (i = 0; i < eu_countries.length; i++) {
+            all_countries.splice(all_countries.indexOf(eu_countries[i]), 1);
+          }
+          var text = all_countries.join(";");
+          // Set up GDP data URL request
+          var url_country = "https://api.worldbank.org/v2/countries/" + text + ";EUU/indicators/NY.GDP.MKTP.CD?per_page=300&MRV=1&format=json";
+          var array_country = [];
+          $.ajax({
+            url: url_country,
+            complete: function (json) {
+              gdpJson = JSON.parse(json.responseText);
+              gdpData = gdpJson[1];
+              gdpData.sort(function (a, b) {
+                return b.value - a.value
+              });
+              console.log(gdpData);
+              var i;
+              for (i = 0; i < 10; i++) {
+                if (gdpData[i].value != null) {
+                  array_country.push({
+                    name: 'GDP in ' + gdpData[i].date + ' (current US$)',
+                    data: [{
+                      name: gdpData[i].country.value,
+                      value: parseFloat(gdpData[i].value)
+                    }]
+                  });
+                };
+              }
+              // Create the Highchart
+              var chart = new Highcharts.Chart({
+                chart: {
+                  type: 'packedbubble',
+                  renderTo: 'container'
+                },
+                title: {
+                  text: 'The World’s Largest GDPs',
+                  style: {
+                    fontFamily: '"Larsseit", sans-serif',
+                    color: '#04284a',
+                    fontSize: '30px',
+                    opacity: 1
+                  }
+                },
+                credits: {
+                  href: 'https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=1W-EU&most_recent_value_desc=true',
+                  text: 'Source: World Bank.',
+                  style: {
+                    display: 'block'
+                  }
+                },
+                tooltip: {
+                  useHTML: true,
+                  pointFormat: '<b>{point.name}:</b> ${point.value}'
+                },
+                legend: {
+                  enabled: false
+                },
+                plotOptions: {
+                  packedbubble: {
+                    maxSize: '120%',
+                    dataLabels: {
+                      enabled: true,
+                      format: '{point.name}'
+                    }
+                  }
+                },
+                series: array_country
+              }); // end Highchart
             }
+          }); // end GDP data URL request
         }
-    },
-    colors: ['#4391DB', '#F25D27', '#5c6b40', '#aa2800', '#3f6d6b',
-    '#773863', '#b5a06d', '#A1A3A1', '#668296', '#f9b832'],
-    series: [
-		{
-        name: 'GDP in 2018 (current US$)',
-        data: [ {
-            name: "United States",
-            value: 20.49
-        }]}, {
-        name: 'GDP in 2018 (current US$)',
-        data: [{
-            name: 'European Union',
-            value: 18.76
-        }]}, {
-        name: 'GDP in 2018 (current US$)',
-        data: [{
-            name: 'China',
-            value: 13.61
-        }]},
-        {
-        name: 'GDP in 2018 (current US$)',
-        data: [{
-            name: "Japan",
-            value: 4.97
-        }]},
-			 {
-        name: 'GDP in 2018 (current US$)',
-        data: [{
-            name: "India",
-            value: 2.73
-        }]},
-       {
-        name: 'GDP in 2018 (current US$)',
-        data: [{
-            name: "Brazil",
-            value: 1.87
-        }]},{
-        name: 'GDP in 2018 (current US$)',
-        data: [ {
-            name: "Canada",
-            value: 1.71
-        }]},
-        {
-        name: 'GDP in 2018 (current US$)',
-        data: [{
-            name: "Russia",
-            value: 1.66
-        }]}, 
-        {
-        name: 'GDP in 2018 (current US$)',
-        data: [{
-            name: "South Korea",
-            value: 1.62
-        }]},
-        {
-        name: 'GDP in 2018 (current US$)',
-        data: [{
-            name: "Australia",
-            value: 1.43
-        }]}]
-});
+      })
+    }
+  })
+}); // end function
+
 </script>
 </body>
 </html>
